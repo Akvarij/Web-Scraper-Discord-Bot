@@ -1,11 +1,11 @@
 const puppeteer = require('puppeteer-extra');
 const cron = require('node-cron');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+puppeteer.use(StealthPlugin());
+
 require('dotenv').config();
 
 const { Client, GatewayIntentBits } = require('discord.js');
-
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 
@@ -14,9 +14,9 @@ client.login(process.env.CLIENT_TOKEN);
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
     
-    const sportsChannel = client.channels.cache.find(channel => channel.name === process.env.SERVER_NAME);
+    const sportsChannel = client.channels.cache.find(channel => channel.name === 'sport');
     if (!sportsChannel) {
-        console.error(`Channel ${process.env.SERVER_NAME} not found`);
+        console.error('No channel found.');
         return;
     }
 
@@ -32,27 +32,27 @@ client.on('ready', () => {
                 let data = [];
 
                 const articles = document.querySelectorAll('article.mec-event-article');
-
-                articles.slice(0,4).forEach((article) => {
+                articles.forEach((article) => {
                     const dateElement = article.querySelector('.mec-event-date .mec-start-date-label');
                     const titleElement = article.querySelector('h4.mec-event-title a.mec-color-hover');
                     
                     if (dateElement && titleElement) {
-                        data.push({
-                            date: dateElement.textContent,
-                            title: titleElement.textContent.trim(),
-                            link: titleElement.href
-                        });
+                        if(data.length < 5) { 
+                            data.push({
+                                Date: dateElement.textContent,
+                                Title: titleElement.textContent.trim(),
+                                Link: titleElement.href
+                            });
+                        }
                     }
                 });
-
                 return data;
             });
 
             await browser.close();
 
             if (events.length > 0) {
-                const eventString = events.map(event => `Date: ${event.date}, Title: ${event.title}, Link: <${event.link}>`).join('\n');
+                const eventString = events.map(event => `Date: ${event.Date}, Title: ${event.Title}, Link: <${event.Link}>`).join('\n');
                 sportsChannel.send(`Scraped events: \n${eventString}`);
             } else {
                 sportsChannel.send('No events found on the page.');
@@ -67,3 +67,4 @@ client.on('ready', () => {
         timezone: "Europe/Belgrade"
     });
 });
+  
